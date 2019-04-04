@@ -48,7 +48,7 @@ def identity_block(input_tensor, filters):
     x = KL.Activation('relu')(x)
     return x
 
-#构造50层的残差网络
+#构造深度残差卷积神经网络
 def resnet(out_class, input_shape):
     #图像输入28x28x4
     inputs = KL.Input(shape=input_shape)  
@@ -72,11 +72,13 @@ def resnet(out_class, input_shape):
     x = identity_block(x, [256, 256, 1024])  
     x = identity_block(x, [256, 256, 1024])  
     x = identity_block(x, [256, 256, 1024])  
-    x = identity_block(x, [256, 256, 1024])  
+    x = identity_block(x, [256, 256, 1024]) 
+    '''
     #第四个残差块 3 
     x = conv_block(x, [512,512,2048])  
     x = identity_block(x, [512, 512, 2048])  
     x = identity_block(x, [512, 512, 2048])
+    '''
     #全局平均池化
     x = KL.AveragePooling2D()(x) 
     x = KL.Flatten()(x)
