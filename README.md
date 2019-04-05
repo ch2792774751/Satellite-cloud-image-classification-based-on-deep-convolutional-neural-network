@@ -12,3 +12,4 @@
      使用keras2.2
 关于模型: 
 　　　使用的模型是深度卷积神经网络模型，分别是Lenet,Resnet,卷积神经网络模型具有较好的泛化效果．
+ 此外，还可以使用BP,ELM,SVM,Xgboost,RandomForest，K近邻,决策树等模型。
