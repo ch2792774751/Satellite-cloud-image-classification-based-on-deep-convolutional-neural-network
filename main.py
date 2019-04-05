@@ -1,7 +1,7 @@
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 import numpy as np
-from keras.optimizers import SGD
+from keras.optimizers import SGD,Adam
 from keras.utils import np_utils  
 from keras.utils.vis_utils import plot_model  
 import matplotlib.pyplot as plt
@@ -11,7 +11,9 @@ import pickle
 import time
 from collections import Counter
 from keras.callbacks import History
-from Config import Config
+from sklearn.preprocessing import MinMaxScaler
+from BP import *
+from Config import *
 from resnet import *
 from lenet import *
 from utils import *
@@ -24,6 +26,13 @@ set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
 fr1 = open('./train2.pickle','rb')   
 trainData, trainLabels,testData, testLabels =  pickle.load(fr1)
+#trainData, testData = trainData.astype(np.float16)/255.0, testData.astype(np.float16)/255.0
+trainData = trainData[:,:,:,0:4] 
+testData = testData[:,:,:,0:4] 
+
+#trainData = trainData.reshape(trainData.shape[0],trainData.shape[1]*trainData.shape[2])
+#testData = testData.reshape(testData.shape[0],testData.shape[1]*testData.shape[2])
+
 testLabels = testLabels.reshape([-1,])
 trainLabels = trainLabels.reshape([-1,])
 
@@ -37,18 +46,35 @@ print('测试集个数',testData.shape[0])
 trainLabels = np_utils.to_categorical(trainLabels, Config.CLASSES)  
 testLabels = np_utils.to_categorical(testLabels, Config.CLASSES)
 
-resnet = resnet(Config.CLASSES,Config.INPUT_SHAPE)
-sgd = SGD(lr=Config.LEARNING_RATE, decay=Config.WEIGHT_DECAY, momentum=Config.LEARNING_MOMENTUM, nesterov=True)
-#resnet.compile(loss='categorical_crossentropy',optimizer=Adam(),metrics=['accuracy'])
-resnet.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])  
-resnet.summary()
+#BP
+#model = BP(Config.CLASSES,Config.BP_INPUT_SHAPE)
+#model.compile(loss='mean_squared_error', optimizer='adam',metrics=['accuracy']) 
 
 time_start = time.time()
-print("开始训练resnet神经网络模型")
+print("开始训练神经网络模型")
+
+
+#resnet
+#model = resnet(Config.CLASSES,Config.INPUT_SHAPE)
+#sgd = SGD(lr=Config.LEARNING_RATE, decay=Config.WEIGHT_DECAY, momentum=Config.LEARNING_MOMENTUM, nesterov=True)
+#model.compile(loss='categorical_crossentropy',optimizer=Adam(),metrics=['accuracy'])
+#model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])  
+#model.summary()
+
+#lenet
+model = Lenet(Config.CLASSES,Config.INPUT_SHAPE_4)
+sgd = SGD(lr=Config.LEARNING_RATE, decay=Config.WEIGHT_DECAY, momentum=Config.LEARNING_MOMENTUM, nesterov=True)
+#model.compile(loss='categorical_crossentropy',optimizer=Adam(),metrics=['accuracy'])
+model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])  
+model.summary()
+
 history = History()
-history=resnet.fit(trainData,trainLabels,batch_size=Config.BATCH_SIZE,epochs=Config.EPOCH,verbose=1,shuffle=True,validation_data=(testData,testLabels),callbacks=[lr_reducer, early_stopper])
-resnet.save('./resnet_epochs.h5')
-scores = resnet.evaluate(testData,testLabels,verbose=0)
+history=model.fit(trainData,trainLabels,batch_size=Config.BATCH_SIZE,epochs=Config.EPOCH,verbose=1,shuffle=True,validation_data=(testData,testLabels),callbacks=[lr_reducer, early_stopper])
+#model.save('./resnet_1_100epochs.h5')
+model.save("./lenet_4_50.h5")
+
+
+scores = model.evaluate(testData,testLabels,verbose=0)
 print("scores = ",scores)
 time_end = time.time()
 print("resnet神经网络模型训练结束")
@@ -59,8 +85,8 @@ save_data(file_dir='./result/' ,filename='train_loss',data=history.history["loss
 save_data(file_dir='./result/' ,filename='val_acc',data=history.history["val_acc"])
 save_data(file_dir='./result/' ,filename='train_acc',data=history.history["acc"])
 
-plot_fig(history.history["loss"], history.history["val_loss"],'train_loss', 'val_loss')
-plot_fig(history.history["acc"], history.history["val_acc"],'train_acc', 'val_acc')
+plot_fig(history.history["loss"], history.history["val_loss"],'train_loss', 'val_loss','epoch','loss')
+plot_fig(history.history["acc"], history.history["val_acc"],'train_acc', 'val_acc','epoch','acc')
 # fig, ax1 = plt.subplots(1,1)
 # ax1.plot(history.history["val_loss"])
 # ax1.plot(history.history["loss"])
